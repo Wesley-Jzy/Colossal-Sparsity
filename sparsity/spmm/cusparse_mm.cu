@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cusparse_v2.h>
+#include <cusparse.h>
 #include <cuda.h>
 #include "include/common.h"
 

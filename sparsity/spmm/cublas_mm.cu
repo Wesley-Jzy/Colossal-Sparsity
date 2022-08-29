@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
-#include "cublas_v2.h"
+#include "cublas.h"
 #include "include/common.h"
 
 /*
