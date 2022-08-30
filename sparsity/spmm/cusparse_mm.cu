@@ -1,167 +1,122 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cusparse.h>
-#include <cuda.h>
+#include <cuda_runtime_api.h> // cudaMalloc, cudaMemcpy, etc.
+#include <cusparse.h>         // cusparseSpMM
+#include <stdio.h>            // printf
+#include <stdlib.h>           // EXIT_FAILURE
 #include "include/common.h"
 
-/*
- * This is an example demonstrating usage of the cuSPARSE library to perform a
- * sparse matrix-vector multiplication on randomly generated data.
- */
 
-/*
- * M = # of rows
- * N = # of columns
- */
-int M = 1024;
-int N = 1024;
+int main(void) {
+    // Host problem definition
+    int   A_num_rows      = 4;
+    int   A_num_cols      = 4;
+    int   A_nnz           = 9;
+    int   B_num_rows      = A_num_cols;
+    int   B_num_cols      = 3;
+    int   ldb             = B_num_rows;
+    int   ldc             = A_num_rows;
+    int   B_size          = ldb * B_num_cols;
+    int   C_size          = ldc * B_num_cols;
+    int   hA_csrOffsets[] = { 0, 3, 4, 7, 9 };
+    int   hA_columns[]    = { 0, 2, 3, 1, 0, 2, 3, 1, 3 };
+    float hA_values[]     = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
+                              6.0f, 7.0f, 8.0f, 9.0f };
+    float hB[]            = { 1.0f,  2.0f,  3.0f,  4.0f,
+                              5.0f,  6.0f,  7.0f,  8.0f,
+                              9.0f, 10.0f, 11.0f, 12.0f };
+    float hC[]            = { 0.0f, 0.0f, 0.0f, 0.0f,
+                              0.0f, 0.0f, 0.0f, 0.0f,
+                              0.0f, 0.0f, 0.0f, 0.0f };
+    float hC_result[]     = { 19.0f,  8.0f,  51.0f,  52.0f,
+                              43.0f, 24.0f, 123.0f, 120.0f,
+                              67.0f, 40.0f, 195.0f, 188.0f };
+    float alpha           = 1.0f;
+    float beta            = 0.0f;
+    //--------------------------------------------------------------------------
+    // Device memory management
+    int   *dA_csrOffsets, *dA_columns;
+    float *dA_values, *dB, *dC;
+    CHECK_CUDA( cudaMalloc((void**) &dA_csrOffsets,
+                           (A_num_rows + 1) * sizeof(int)) )
+    CHECK_CUDA( cudaMalloc((void**) &dA_columns, A_nnz * sizeof(int))    )
+    CHECK_CUDA( cudaMalloc((void**) &dA_values,  A_nnz * sizeof(float))  )
+    CHECK_CUDA( cudaMalloc((void**) &dB,         B_size * sizeof(float)) )
+    CHECK_CUDA( cudaMalloc((void**) &dC,         C_size * sizeof(float)) )
 
-/*
- * Generate random dense matrix A in column-major order, while rounding some
- * elements down to zero to ensure it is sparse.
- */
-int generate_random_dense_matrix(int M, int N, float **outA)
-{
-    int i, j;
-    double rMax = (double)RAND_MAX;
-    float *A = (float *)malloc(sizeof(float) * M * N);
-    int totalNnz = 0;
+    CHECK_CUDA( cudaMemcpy(dA_csrOffsets, hA_csrOffsets,
+                           (A_num_rows + 1) * sizeof(int),
+                           cudaMemcpyHostToDevice) )
+    CHECK_CUDA( cudaMemcpy(dA_columns, hA_columns, A_nnz * sizeof(int),
+                           cudaMemcpyHostToDevice) )
+    CHECK_CUDA( cudaMemcpy(dA_values, hA_values, A_nnz * sizeof(float),
+                           cudaMemcpyHostToDevice) )
+    CHECK_CUDA( cudaMemcpy(dB, hB, B_size * sizeof(float),
+                           cudaMemcpyHostToDevice) )
+    CHECK_CUDA( cudaMemcpy(dC, hC, C_size * sizeof(float),
+                           cudaMemcpyHostToDevice) )
+    //--------------------------------------------------------------------------
+    // CUSPARSE APIs
+    cusparseHandle_t     handle = NULL;
+    cusparseSpMatDescr_t matA;
+    cusparseDnMatDescr_t matB, matC;
+    void*                dBuffer    = NULL;
+    size_t               bufferSize = 0;
+    CHECK_CUSPARSE( cusparseCreate(&handle) )
+    // Create sparse matrix A in CSR format
+    CHECK_CUSPARSE( cusparseCreateCsr(&matA, A_num_rows, A_num_cols, A_nnz,
+                                      dA_csrOffsets, dA_columns, dA_values,
+                                      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                                      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F) )
+    // Create dense matrix B
+    CHECK_CUSPARSE( cusparseCreateDnMat(&matB, A_num_cols, B_num_cols, ldb, dB,
+                                        CUDA_R_32F, CUSPARSE_ORDER_COL) )
+    // Create dense matrix C
+    CHECK_CUSPARSE( cusparseCreateDnMat(&matC, A_num_rows, B_num_cols, ldc, dC,
+                                        CUDA_R_32F, CUSPARSE_ORDER_COL) )
+    // allocate an external buffer if needed
+    CHECK_CUSPARSE( cusparseSpMM_bufferSize(
+                                 handle,
+                                 CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                 CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                 &alpha, matA, matB, &beta, matC, CUDA_R_32F,
+                                 CUSPARSE_SPMM_ALG_DEFAULT, &bufferSize) )
+    CHECK_CUDA( cudaMalloc(&dBuffer, bufferSize) )
 
-    for (j = 0; j < N; j++)
-    {
-        for (i = 0; i < M; i++)
-        {
-            int r = rand();
-            float *curr = A + (j * M + i);
+    // execute SpMM
+    CHECK_CUSPARSE( cusparseSpMM(handle,
+                                 CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                 CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                 &alpha, matA, matB, &beta, matC, CUDA_R_32F,
+                                 CUSPARSE_SPMM_ALG_DEFAULT, dBuffer) )
 
-            if (r % 3 > 0)
-            {
-                *curr = 0.0f;
-            }
-            else
-            {
-                double dr = (double)r;
-                *curr = (dr / rMax) * 100.0;
-            }
-
-            if (*curr != 0.0f)
-            {
-                totalNnz++;
+    // destroy matrix/vector descriptors
+    CHECK_CUSPARSE( cusparseDestroySpMat(matA) )
+    CHECK_CUSPARSE( cusparseDestroyDnMat(matB) )
+    CHECK_CUSPARSE( cusparseDestroyDnMat(matC) )
+    CHECK_CUSPARSE( cusparseDestroy(handle) )
+    //--------------------------------------------------------------------------
+    // device result check
+    CHECK_CUDA( cudaMemcpy(hC, dC, C_size * sizeof(float),
+                           cudaMemcpyDeviceToHost) )
+    int correct = 1;
+    for (int i = 0; i < A_num_rows; i++) {
+        for (int j = 0; j < B_num_cols; j++) {
+            if (hC[i + j * ldc] != hC_result[i + j * ldc]) {
+                correct = 0; // direct floating point comparison is not reliable
+                break;
             }
         }
     }
-
-    *outA = A;
-    return totalNnz;
-}
-
-void print_partial_matrix(float *M, int nrows, int ncols, int max_row,
-        int max_col)
-{
-    int row, col;
-
-    for (row = 0; row < max_row; row++)
-    {
-        for (col = 0; col < max_col; col++)
-        {
-            printf("%2.2f ", M[row * ncols + col]);
-        }
-        printf("...\n");
-    }
-    printf("...\n");
-}
-
-int main(int argc, char **argv)
-{
-    float *A, *dA;
-    float *B, *dB;
-    float *C, *dC;
-    int *dANnzPerRow;
-    float *dCsrValA;
-    int *dCsrRowPtrA;
-    int *dCsrColIndA;
-    int totalANnz;
-    float alpha = 3.0f;
-    float beta = 4.0f;
-    cusparseHandle_t handle = 0;
-    cusparseMatDescr_t Adescr = 0;
-
-    // Generate input
-    srand(10086);
-    int trueANnz = generate_random_dense_matrix(M, N, &A);
-    int trueBNnz = generate_random_dense_matrix(N, M, &B);
-    C = (float *)malloc(sizeof(float) * M * M);
-
-    printf("A:\n");
-    print_partial_matrix(A, M, N, 10, 10);
-    printf("B:\n");
-    print_partial_matrix(B, N, M, 10, 10);
-
-    // Create the cuSPARSE handle
-    CHECK_CUSPARSE(cusparseCreate(&handle));
-
-    // Allocate device memory for vectors and the dense form of the matrix A
-    CHECK(cudaMalloc((void **)&dA, sizeof(float) * M * N));
-    CHECK(cudaMalloc((void **)&dB, sizeof(float) * N * M));
-    CHECK(cudaMalloc((void **)&dC, sizeof(float) * M * M));
-    CHECK(cudaMalloc((void **)&dANnzPerRow, sizeof(int) * M));
-
-    // Construct a descriptor of the matrix A
-    CHECK_CUSPARSE(cusparseCreateMatDescr(&Adescr));
-    CHECK_CUSPARSE(cusparseSetMatType(Adescr, CUSPARSE_MATRIX_TYPE_GENERAL));
-    CHECK_CUSPARSE(cusparseSetMatIndexBase(Adescr, CUSPARSE_INDEX_BASE_ZERO));
-
-    // Transfer the input vectors and dense matrix A to the device
-    CHECK(cudaMemcpy(dA, A, sizeof(float) * M * N, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(dB, B, sizeof(float) * N * M, cudaMemcpyHostToDevice));
-    CHECK(cudaMemset(dC, 0x00, sizeof(float) * M * M));
-
-    // Compute the number of non-zero elements in A
-    CHECK_CUSPARSE(cusparseSnnz(handle, CUSPARSE_DIRECTION_ROW, M, N, Adescr,
-                                dA, M, dANnzPerRow, &totalANnz));
-
-    if (totalANnz != trueANnz)
-    {
-        fprintf(stderr, "Difference detected between cuSPARSE NNZ and true "
-                "value: expected %d but got %d\n", trueANnz, totalANnz);
-        return 1;
-    }
-
-    // Allocate device memory to store the sparse CSR representation of A
-    CHECK(cudaMalloc((void **)&dCsrValA, sizeof(float) * totalANnz));
-    CHECK(cudaMalloc((void **)&dCsrRowPtrA, sizeof(int) * (M + 1)));
-    CHECK(cudaMalloc((void **)&dCsrColIndA, sizeof(int) * totalANnz));
-
-    // Convert A from a dense formatting to a CSR formatting, using the GPU
-    CHECK_CUSPARSE(cusparseSdense2csr(handle, M, N, Adescr, dA, M, dANnzPerRow,
-                                      dCsrValA, dCsrRowPtrA, dCsrColIndA));
-
-    // Perform matrix-matrix multiplication with the CSR-formatted matrix A
-    CHECK_CUSPARSE(cusparseScsrmm(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, M,
-                                  M, N, totalANnz, &alpha, Adescr, dCsrValA,
-                                  dCsrRowPtrA, dCsrColIndA, dB, N, &beta, dC,
-                                  M));
-
-    // Copy the result vector back to the host
-    CHECK(cudaMemcpy(C, dC, sizeof(float) * M * M, cudaMemcpyDeviceToHost));
-
-    printf("C:\n");
-    print_partial_matrix(C, M, M, 10, 10);
-
-    free(A);
-    free(B);
-    free(C);
-
-    CHECK(cudaFree(dA));
-    CHECK(cudaFree(dB));
-    CHECK(cudaFree(dC));
-    CHECK(cudaFree(dANnzPerRow));
-    CHECK(cudaFree(dCsrValA));
-    CHECK(cudaFree(dCsrRowPtrA));
-    CHECK(cudaFree(dCsrColIndA));
-
-    CHECK_CUSPARSE(cusparseDestroyMatDescr(Adescr));
-    CHECK_CUSPARSE(cusparseDestroy(handle));
-
-    return 0;
+    if (correct)
+        printf("spmm_csr_example test PASSED\n");
+    else
+        printf("spmm_csr_example test FAILED: wrong result\n");
+    //--------------------------------------------------------------------------
+    // device memory deallocation
+    CHECK_CUDA( cudaFree(dBuffer) )
+    CHECK_CUDA( cudaFree(dA_csrOffsets) )
+    CHECK_CUDA( cudaFree(dA_columns) )
+    CHECK_CUDA( cudaFree(dA_values) )
+    CHECK_CUDA( cudaFree(dB) )
+    CHECK_CUDA( cudaFree(dC) )
+    return EXIT_SUCCESS;
 }

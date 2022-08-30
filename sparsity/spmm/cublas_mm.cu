@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
-#include "cublas.h"
+#include <cublas_v2.h>
 #include "include/common.h"
 
 /*
@@ -65,9 +65,9 @@ int main(int argc, char **argv)
     CHECK_CUBLAS(cublasCreate(&handle));
 
     // Allocate device memory
-    CHECK(cudaMalloc((void **)&dA, sizeof(float) * M * N));
-    CHECK(cudaMalloc((void **)&dB, sizeof(float) * N * M));
-    CHECK(cudaMalloc((void **)&dC, sizeof(float) * M * M));
+    CHECK_CUDA(cudaMalloc((void **)&dA, sizeof(float) * M * N));
+    CHECK_CUDA(cudaMalloc((void **)&dB, sizeof(float) * N * M));
+    CHECK_CUDA(cudaMalloc((void **)&dC, sizeof(float) * M * M));
 
     // Transfer inputs to the device
     CHECK_CUBLAS(cublasSetMatrix(M, N, sizeof(float), A, M, dA, M));
@@ -96,9 +96,9 @@ int main(int argc, char **argv)
     free(B);
     free(C);
 
-    CHECK(cudaFree(dA));
-    CHECK(cudaFree(dB));
-    CHECK(cudaFree(dC));
+    CHECK_CUDA(cudaFree(dA));
+    CHECK_CUDA(cudaFree(dB));
+    CHECK_CUDA(cudaFree(dC));
     CHECK_CUBLAS(cublasDestroy(handle));
 
     return 0;
