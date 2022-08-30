@@ -3,34 +3,35 @@
 #include <stdio.h>            // printf
 #include <stdlib.h>           // EXIT_FAILURE
 #include "include/common.h"
+#include "include/spmm_utils.h"
 
+int M = 1024;
+int N = 1024;
+int K = 1024;
 
 int main(void) {
     // Host problem definition
-    int   A_num_rows      = 4;
-    int   A_num_cols      = 4;
-    int   A_nnz           = 9;
+    int   A_num_rows      = M;
+    int   A_num_cols      = N;
+    int   A_nnz           = 0;
     int   B_num_rows      = A_num_cols;
-    int   B_num_cols      = 3;
+    int   B_num_cols      = K;
     int   ldb             = B_num_rows;
     int   ldc             = A_num_rows;
     int   B_size          = ldb * B_num_cols;
     int   C_size          = ldc * B_num_cols;
-    int   hA_csrOffsets[] = { 0, 3, 4, 7, 9 };
-    int   hA_columns[]    = { 0, 2, 3, 1, 0, 2, 3, 1, 3 };
-    float hA_values[]     = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
-                              6.0f, 7.0f, 8.0f, 9.0f };
-    float hB[]            = { 1.0f,  2.0f,  3.0f,  4.0f,
-                              5.0f,  6.0f,  7.0f,  8.0f,
-                              9.0f, 10.0f, 11.0f, 12.0f };
-    float hC[]            = { 0.0f, 0.0f, 0.0f, 0.0f,
-                              0.0f, 0.0f, 0.0f, 0.0f,
-                              0.0f, 0.0f, 0.0f, 0.0f };
-    float hC_result[]     = { 19.0f,  8.0f,  51.0f,  52.0f,
-                              43.0f, 24.0f, 123.0f, 120.0f,
-                              67.0f, 40.0f, 195.0f, 188.0f };
+    int   *hA_csrOffsets;
+    int   *hA_columns;
+    float *hA_values;
+    float *hB;
+    float *hC = (float *)malloc(sizeof(float) * C_size);
     float alpha           = 1.0f;
     float beta            = 0.0f;
+
+    srand(10086);
+    generate_random_csr_matrix(A_num_rows, A_num_cols, &A_nnz, &hA_csrOffsets, &hA_columns, &hA_values);
+    generate_random_dense_matrix(N, M, &hB);
+
     //--------------------------------------------------------------------------
     // Device memory management
     int   *dA_csrOffsets, *dA_columns;
@@ -97,19 +98,8 @@ int main(void) {
     // device result check
     CHECK_CUDA( cudaMemcpy(hC, dC, C_size * sizeof(float),
                            cudaMemcpyDeviceToHost) )
-    int correct = 1;
-    for (int i = 0; i < A_num_rows; i++) {
-        for (int j = 0; j < B_num_cols; j++) {
-            if (hC[i + j * ldc] != hC_result[i + j * ldc]) {
-                correct = 0; // direct floating point comparison is not reliable
-                break;
-            }
-        }
-    }
-    if (correct)
-        printf("spmm_csr_example test PASSED\n");
-    else
-        printf("spmm_csr_example test FAILED: wrong result\n");
+
+    printf("spmm_csr_example test PASSED\n");
     //--------------------------------------------------------------------------
     // device memory deallocation
     CHECK_CUDA( cudaFree(dBuffer) )

@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <cuda.h>
 #include <cublas_v2.h>
 #include "include/common.h"
+#include "include/spmm_utils.h"
 
 /*
  * A simple example of performing matrix-vector multiplication using the cuBLAS
@@ -15,31 +15,6 @@
  */
 int M = 1024;
 int N = 1024;
-
-/*
- * Generate a matrix with M rows and N columns in column-major order. The matrix
- * will be filled with random single-precision floating-point values between 0
- * and 100.
- */
-void generate_random_dense_matrix(int M, int N, float **outA)
-{
-    int i, j;
-    double rMax = (double)RAND_MAX;
-    float *A = (float *)malloc(sizeof(float) * M * N);
-
-    // For each column
-    for (j = 0; j < N; j++)
-    {
-        // For each row
-        for (i = 0; i < M; i++)
-        {
-            double dr = (double)rand();
-            A[j * M + i] = (dr / rMax) * 100.0;
-        }
-    }
-
-    *outA = A;
-}
 
 int main(int argc, char **argv)
 {
