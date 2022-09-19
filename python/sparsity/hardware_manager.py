@@ -1,5 +1,3 @@
-from .gpu import GPUResource
-
 class HardwareManager(object):
     def __init__(self, num_gpu:int):
         # describe the GPU nodes

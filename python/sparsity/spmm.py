@@ -4,7 +4,7 @@
 from .tensor import DenseTensor, SparseTensor
 from .scheduler import DistributedSPMMScheduler
 from .distributed_manager import DistributedSPMMManager
-from .hardware_monitor import HardwareManager
+from .hardware_manager import HardwareManager
 
 def distributed_spmm(A:SparseTensor, B:DenseTensor, hw_manager:HardwareManager) -> DenseTensor:
     # 1. Analysis the best distributed policy through given A & B & Hardware.
