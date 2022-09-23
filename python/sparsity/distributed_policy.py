@@ -10,10 +10,10 @@ class DistributedSPMMPolicy(object):
         self._n = n
         self._k = k
 
-    def do_spmm(self, device_row_index = 0, device_col_index = 0, A:SparseTensor, B:DenseTensor, C:DenseTensor):
+    def do_spmm(self, A:SparseTensor, B:DenseTensor, C:DenseTensor, device_row_index = 0, device_col_index = 0):
         pass
 
-    def collect(self, device_row_index = 0, device_col_index = 0, C:DenseTensor):
+    def collect(self, C:DenseTensor, device_row_index = 0, device_col_index = 0):
         pass
 
     def eval_memory_storage(self):
@@ -42,11 +42,11 @@ class TestPolicy(DistributedSPMMPolicy):
     def __str__(self):
         return self.__class__.__name__
 
-    def do_spmm(self, device_row_index = 0, device_col_index = 0, A:SparseTensor, B:DenseTensor, C:DenseTensor):
+    def do_spmm(self, A:SparseTensor, B:DenseTensor, C:DenseTensor, device_row_index = 0, device_col_index = 0):
         C._local_tensor = torch.matmul(A._local_tensor, B._local_tensor)
         return
 
-    def collect(self, device_row_index = 0, device_col_index = 0, C:DenseTensor):
+    def collect(self, C:DenseTensor, device_row_index = 0, device_col_index = 0):
         return C
 
     def eval_memory_storage(self):

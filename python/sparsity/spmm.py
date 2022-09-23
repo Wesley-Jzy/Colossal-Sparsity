@@ -22,8 +22,8 @@ def distributed_spmm(A:SparseTensor, B:DenseTensor, hw_manager:HardwareManager) 
     dist_B = distributed_policy.distribute_B(B, device_row_index = 0, device_col_index = 0)
     dist_C = distributed_policy.distribute_C(device_row_index = 0, device_col_index = 0)
     # 3. Do distributed spmm.
-    distributed_policy.do_spmm(device_row_index = 0, device_col_index = 0, dist_A, dist_B, dist_C)
-    C = distributed_policy.collect(device_row_index = 0, device_col_index = 0, dist_C)
+    distributed_policy.do_spmm(dist_A, dist_B, dist_C, device_row_index = 0, device_col_index = 0)
+    C = distributed_policy.collect(dist_C, device_row_index = 0, device_col_index = 0)
 
     dist_spmm_manager.end_distribution()
     print('distributed_spmm finished.')
