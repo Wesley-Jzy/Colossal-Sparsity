@@ -25,10 +25,10 @@ class DistributedSPMMPolicy(object):
     def eval_communication_cost(self):
         pass
     
-    def distribute_A(self, device_row_index = 0, device_col_index = 0, A:SparseTensor) -> SparseTensor:
+    def distribute_A(self, A:SparseTensor, device_row_index = 0, device_col_index = 0) -> SparseTensor:
         pass
     
-    def distribute_B(self, device_row_index = 0, device_col_index = 0, B:DenseTensor) -> DenseTensor:
+    def distribute_B(self, B:DenseTensordevice_row_index = 0, device_col_index = 0) -> DenseTensor:
         pass
     
     def distribute_C(self, device_row_index = 0, device_col_index = 0) -> DenseTensor:
@@ -58,10 +58,10 @@ class TestPolicy(DistributedSPMMPolicy):
     def eval_communication_cost(self):
         return 10.0
     
-    def distribute_A(self, device_row_index = 0, device_col_index = 0, A:SparseTensor) -> SparseTensor:
+    def distribute_A(self, A:SparseTensor, device_row_index = 0, device_col_index = 0) -> SparseTensor:
         return A
     
-    def distribute_B(self, device_row_index = 0, device_col_index = 0, B:DenseTensor) -> DenseTensor:
+    def distribute_B(self, B:DenseTensordevice_row_index = 0, device_col_index = 0) -> DenseTensor:
         return B
     
     def distribute_C(self, device_row_index = 0, device_col_index = 0) -> DenseTensor:
