@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-
-@dataclass
 class DeviceMesh(object):
     """
     Describes the device mesh.
@@ -8,10 +5,9 @@ class DeviceMesh(object):
         num_row(int): Number of mesh row.
         num_col(int): Number of mesh column. num_row * num_col = num_gpu.
     """
-    __slots__ = ['num_row', 'num_col']
-
-    num_row: int = 0
-    num_col: int = 0
+    def __init__(self, device_num_row = 0, device_num_col = 0):
+        self.num_row: int = device_num_row
+        self.num_col: int = device_num_col
 
     def check_device_index(self, device_row_index, device_col_index):
         assert device_row_index < self.num_row and device_col_index < self.num_col \
