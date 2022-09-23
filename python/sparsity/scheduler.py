@@ -6,8 +6,6 @@ import math
 
 @dataclass
 class _PolicyCandidate(object):
-    __slots__ = ['policy', 'memory_cost', 'time_cost']
-
     policy:DistributedSPMMPolicy
     memory_cost:float = 0.0
     time_cost:float = 0.0
