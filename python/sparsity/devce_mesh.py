@@ -12,3 +12,8 @@ class DeviceMesh(object):
 
     num_row: int = 0
     num_col: int = 0
+
+    def check_device_index(self, device_row_index, device_col_index):
+        assert device_row_index < self.num_row and device_col_index < self.num_col \
+            and device_row_index >= 0 and device_col_index >= 0, \
+            'Device index should be among the range of device mesh.'

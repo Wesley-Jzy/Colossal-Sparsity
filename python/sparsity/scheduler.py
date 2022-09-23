@@ -26,7 +26,7 @@ class DistributedSPMMScheduler(object):
         # TODO Add real analysis code
         row_dim = int(math.sqrt(self._num_gpu))
         col_dim = row_dim
-        policy = TestPolicy(row_dim, col_dim)
+        policy = TestPolicy(row_dim, col_dim, self._A.get_dim_size(dim=0), self._A.get_dim_size(dim=1), self._B.get_dim_size(dim=1))
         candidate = _PolicyCandidate(policy, policy.eval_memory_storage(), policy.eval_computation_cost())
         self._policy_candidates.append(candidate)
         print(str(_PolicyCandidate))

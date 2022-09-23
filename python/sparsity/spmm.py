@@ -14,17 +14,19 @@ def distributed_spmm(A:SparseTensor, B:DenseTensor, hw_manager:HardwareManager) 
     scheduler.analysis_policy()
     distributed_policy = scheduler.get_recommended_policy()
 
-    # 2. Arrange A & B into distributed nodes.
-    dist_spmm_manager = DistributedSPMMManager(distributed_policy, A, B)
-    dist_spmm_manager.pre()
+    # 2. Manage distributed input Tensor A B & output Tensor C.
+    dist_spmm_manager = DistributedSPMMManager(distributed_policy)
+    dist_spmm_manager.start_distribution()
 
-    # 3. Do local spmm.
-    dist_spmm_manager.run_task()
+    dist_A = distributed_policy.distribute_A(device_row_index = 0, device_col_index = 0, A)
+    dist_B = distributed_policy.distribute_B(device_row_index = 0, device_col_index = 0, B)
+    dist_C = distributed_policy.distribute_C(device_row_index = 0, device_col_index = 0)
+    # 3. Do distributed spmm.
+    distributed_policy.do_spmm(device_row_index = 0, device_col_index = 0, dist_A, dist_B, dist_C)
+    C = distributed_policy.collect(device_row_index = 0, device_col_index = 0, dist_C)
 
-    # 4. Merge the result.
-    dist_spmm_manager.post()
-
-    C = dist_spmm_manager.get_res()
+    dist_spmm_manager.end_distribution()
+    print('distributed_spmm finished.')
 
     return C
 

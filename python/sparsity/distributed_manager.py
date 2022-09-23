@@ -2,18 +2,11 @@ from .distributed_policy import DistributedSPMMPolicy
 from .tensor import DenseTensor, SparseTensor
 
 class DistributedSPMMManager(object):
-    def __init__(self, dist_policy:DistributedSPMMPolicy,
-                    A:SparseTensor, B:DenseTensor):
+    def __init__(self, dist_policy:DistributedSPMMPolicy):
         pass
 
-    def pre(self):
+    def start_distribution(self):
         pass
     
-    def run_task(self):
-        pass
-    
-    def post(self):
-        pass
-    
-    def get_res(self):
+    def end_distribution(self):
         pass

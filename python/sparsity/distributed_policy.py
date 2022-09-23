@@ -1,21 +1,19 @@
 from .device_mesh import DeviceMesh
 from .tensor import DenseTensor, SparseTensor
+import torch
 
 # Sparse A(m x n) · Dense B(n x k) = Dense C(m x k)
 class DistributedSPMMPolicy(object):
-    def __init__(self, device_num_row, device_num_col):
+    def __init__(self, device_num_row, device_num_col, m, n, k):
         self._device_mesh = DeviceMesh(device_num_row, device_num_col)
-
-    def distribute(self, device_row_index = 0, device_col_index = 0, A:SparseTensor, B:DenseTensor, C:DenseTensor):
-        self._check_device_index()
-        self._distribute_A(A)
-        self._distribute_B(B)
-        self._distribute_C(C)
+        self._m = m
+        self._n = n
+        self._k = k
 
     def do_spmm(self, device_row_index = 0, device_col_index = 0, A:SparseTensor, B:DenseTensor, C:DenseTensor):
         pass
 
-    def collect(self, device_row_index = 0, device_col_index = 0, A:SparseTensor, B:DenseTensor, C:DenseTensor):
+    def collect(self, device_row_index = 0, device_col_index = 0, C:DenseTensor):
         pass
 
     def eval_memory_storage(self):
@@ -26,34 +24,30 @@ class DistributedSPMMPolicy(object):
 
     def eval_communication_cost(self):
         pass
-
-    def _check_device_index(self, device_row_index, device_col_index):
-        assert device_row_index < self._device_mesh.num_row and device_col_index < self._device_mesh.num_col \
-            and device_row_index >= 0 and device_col_index >= 0, \
-            'Device index should be among the range of device mesh.'
     
-    def _distribute_A(self, A:SparseTensor):
+    def distribute_A(self, device_row_index = 0, device_col_index = 0, A:SparseTensor) -> SparseTensor:
         pass
     
-    def _distribute_B(self, B:DenseTensor):
+    def distribute_B(self, device_row_index = 0, device_col_index = 0, B:DenseTensor) -> DenseTensor:
         pass
     
-    def _distribute_C(self, C:DenseTensor):
+    def distribute_C(self, device_row_index = 0, device_col_index = 0) -> DenseTensor:
         pass
 
 # Do spmm in the first node only to test the system
 class TestPolicy(DistributedSPMMPolicy):
-    def __init__(self, device_num_row, device_num_col):
-        self._device_mesh = DeviceMesh(device_num_row, device_num_col)
+    def __init__(self, device_num_row, device_num_col, m, n, k):
+        super(TestPolicy, self).__init__(device_num_row, device_num_col, m, n, k)
 
     def __str__(self):
         return self.__class__.__name__
 
     def do_spmm(self, device_row_index = 0, device_col_index = 0, A:SparseTensor, B:DenseTensor, C:DenseTensor):
+        C._local_tensor = torch.matmul(A._local_tensor, B._local_tensor)
         return
 
-    def collect(self, device_row_index = 0, device_col_index = 0, A:SparseTensor, B:DenseTensor, C:DenseTensor):
-        return
+    def collect(self, device_row_index = 0, device_col_index = 0, C:DenseTensor):
+        return C
 
     def eval_memory_storage(self):
         return 10.0
@@ -64,11 +58,11 @@ class TestPolicy(DistributedSPMMPolicy):
     def eval_communication_cost(self):
         return 10.0
     
-    def _distribute_A(self, A:SparseTensor):
-        return
+    def distribute_A(self, device_row_index = 0, device_col_index = 0, A:SparseTensor) -> SparseTensor:
+        return A
     
-    def _distribute_B(self, B:DenseTensor):
-        return
+    def distribute_B(self, device_row_index = 0, device_col_index = 0, B:DenseTensor) -> DenseTensor:
+        return B
     
-    def _distribute_C(self, C:DenseTensor):
-        return
+    def distribute_C(self, device_row_index = 0, device_col_index = 0) -> DenseTensor:
+        return DenseTensor(torch.empty(self._m, self._k), self._device_mesh)
