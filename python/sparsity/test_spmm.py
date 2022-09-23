@@ -1,5 +1,6 @@
 from sparsity.spmm import distributed_spmm
 from sparsity.tensor import SparseTensor, DenseTensor
+from sparsity.hardware_manager import HardwareManager
 
 from colossalai.utils import free_port
 from functools import partial
