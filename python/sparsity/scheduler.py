@@ -30,4 +30,4 @@ class DistributedSPMMScheduler(object):
         print(str(_PolicyCandidate))
 
     def get_recommended_policy(self) -> DistributedSPMMPolicy:
-        return self._policy_candidates[0]
+        return self._policy_candidates[0].policy
