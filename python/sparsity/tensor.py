@@ -1,6 +1,6 @@
 import torch
-from .device_mesh import DeviceMesh
-from .shard import Shard
+from sparsity.device_mesh import DeviceMesh
+from sparsity.shard import Shard
 
 class GlobalTensorSpec(object):
     def __init__(self, device_mesh:DeviceMesh=None):

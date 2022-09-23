@@ -1,10 +1,10 @@
 # Distributed A · B = C
 # A: SparseTensor | B: DenseTensor | C: DenseTensor
 
-from .tensor import DenseTensor, SparseTensor
-from .scheduler import DistributedSPMMScheduler
-from .distributed_manager import DistributedSPMMManager
-from .hardware_manager import HardwareManager
+from sparsity.tensor import DenseTensor, SparseTensor
+from sparsity.scheduler import DistributedSPMMScheduler
+from sparsity.distributed_manager import DistributedSPMMManager
+from sparsity.hardware_manager import HardwareManager
 
 def distributed_spmm(A:SparseTensor, B:DenseTensor, hw_manager:HardwareManager) -> DenseTensor:
     # 1. Analysis the best distributed policy through given A & B & Hardware.

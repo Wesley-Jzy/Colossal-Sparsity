@@ -1,5 +1,5 @@
-from .distributed_policy import DistributedSPMMPolicy
-from .tensor import DenseTensor, SparseTensor
+from distributed_policy import DistributedSPMMPolicy
+from sparsity.tensor import DenseTensor, SparseTensor
 
 class DistributedSPMMManager(object):
     def __init__(self, dist_policy:DistributedSPMMPolicy):

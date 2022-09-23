@@ -1,5 +1,5 @@
-from .spmm import distributed_spmm
-from .tensor import SparseTensor, DenseTensor
+from sparsity.spmm import distributed_spmm
+from sparsity.tensor import SparseTensor, DenseTensor
 
 from colossalai.utils import free_port
 from functools import partial

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from .tensor import DenseTensor, SparseTensor
-from .distributed_policy import DistributedSPMMPolicy, TestPolicy
+from sparsity..tensor import DenseTensor, SparseTensor
+from sparsity..distributed_policy import DistributedSPMMPolicy, TestPolicy
 
 import math
 

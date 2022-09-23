@@ -1,5 +1,5 @@
-from .device_mesh import DeviceMesh
-from .tensor import DenseTensor, SparseTensor
+from sparsity.device_mesh import DeviceMesh
+from sparsity.tensor import DenseTensor, SparseTensor
 import torch
 
 # Sparse A(m x n) · Dense B(n x k) = Dense C(m x k)
