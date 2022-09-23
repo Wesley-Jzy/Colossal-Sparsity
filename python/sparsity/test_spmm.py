@@ -4,6 +4,7 @@ from sparsity.tensor import SparseTensor, DenseTensor
 from colossalai.utils import free_port
 from functools import partial
 
+import torch
 import colossalai
 import torch.multiprocessing as mp
 
