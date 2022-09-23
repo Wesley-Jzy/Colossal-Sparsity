@@ -28,7 +28,7 @@ class DistributedSPMMPolicy(object):
     def distribute_A(self, A:SparseTensor, device_row_index = 0, device_col_index = 0) -> SparseTensor:
         pass
     
-    def distribute_B(self, B:DenseTensordevice_row_index = 0, device_col_index = 0) -> DenseTensor:
+    def distribute_B(self, B:DenseTensor, device_row_index = 0, device_col_index = 0) -> DenseTensor:
         pass
     
     def distribute_C(self, device_row_index = 0, device_col_index = 0) -> DenseTensor:
