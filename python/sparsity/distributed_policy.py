@@ -61,7 +61,7 @@ class TestPolicy(DistributedSPMMPolicy):
     def distribute_A(self, A:SparseTensor, device_row_index = 0, device_col_index = 0) -> SparseTensor:
         return A
     
-    def distribute_B(self, B:DenseTensordevice_row_index = 0, device_col_index = 0) -> DenseTensor:
+    def distribute_B(self, B:DenseTensor, device_row_index = 0, device_col_index = 0) -> DenseTensor:
         return B
     
     def distribute_C(self, device_row_index = 0, device_col_index = 0) -> DenseTensor:
