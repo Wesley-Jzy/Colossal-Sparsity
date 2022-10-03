@@ -5,7 +5,7 @@ from sparsity.shard import Shard
 class GlobalTensorSpec(object):
     def __init__(self, device_mesh:DeviceMesh=None):
         self._device_mesh = device_mesh
-        self._shards = []
+        self._shard_spec = None
 
     def add_shard(self, shard:Shard):
         self._shards.append(shard)
@@ -17,6 +17,9 @@ class Tensor(object):
 
     def get_dim_size(self, dim = 0):
         return self._local_tensor.size(dim = dim)
+
+    def add_shard(self, ):
+        
 
 DenseTensor = Tensor
 SparseTensor = Tensor
